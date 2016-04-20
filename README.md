@@ -3,9 +3,16 @@
 ##### this is an ruby library help you build C/C++/Monk-C projects
 ##### without writing Makefile
 
-### install
+### install from official rubygem
 
     gem install mcbuild
+
+### install from this git repo
+
+	git clone https://github.com/sunpaq/mcbuild.git
+	cd mcbuild
+	gem build   mcbuild.gemspec
+	gem install mcbuild-0.0.1.gem
     
 ### simple usage example (create a build.rb<any name> file at root folder of C project)
 
@@ -16,10 +23,10 @@
     b.compile
     b.archive_exe('hello_world')
 
-##### after given the build.rb file execute permission (chmod +x build.rb)
-##### you can run it by: ruby build.rb
-##### then an '_build' folder will created
-##### executable file place into '_build/archive' with name 'hello_world'
+	after given the build.rb file execute permission (chmod +x build.rb)
+	you can run it by: ruby build.rb
+	then an '_build' folder will created
+	executable file place into '_build/archive' with name 'hello_world'
 
 ### archive the .a static library
 
