@@ -6,6 +6,7 @@ Gem::Specification.new do |s|
 	s.authors   = ["Sun Yuli"]
 	s.email     = 'sunpaq@gmail.com'
 	s.files     = ["lib/mcbuild.rb"]
-	s.homepage  = 'https://github.com/sunpaq'
+	s.homepage  = 'https://github.com/sunpaq/mcbuild'
 	s.license   = 'BSD'
+	s.description = "find docs here: https://github.com/sunpaq/mcbuild"
 end
