@@ -2,6 +2,7 @@
 
 ##### this is an ruby library help you build C/C++/Monk-C projects
 ##### without writing Makefile
+##### (What is Monk-C? https://github.com/sunpaq/monkc)
 
 ### install from official rubygem
 
