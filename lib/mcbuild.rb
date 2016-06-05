@@ -102,15 +102,16 @@ class MCBuild
 	end
 
 	def compile_file(file)
-		base = File.basename(file, ".c")
+		ext = File.extname(file)
+		base = File.basename(file, ext)
 		cmd = "cc -arch #{@mach} -std=#{@std} -c -o #{@d}/#{@outpath}/#{base}#{@oext} #{file} #{@compile_arg}"
 		puts(cmd)
 		system(cmd)
 	end
 
-	def compile(path=@d)
+	def compile(path=@d, ext=".c")
 		Find.find(path) { |file|
-			if File.extname(file) == ".c" || File.extname(file) == ".asm"
+			if File.extname(file) == ext
 				compile_file(file)
 			end
 		}
