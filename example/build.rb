@@ -1,8 +1,8 @@
 #!/usr/bin/ruby
 require 'mcbuild'
 
-require './mylib/settings.rb'
-require './myapp/settings.rb'
+require_relative 'mylib/settings.rb'
+require_relative 'myapp/settings.rb'
 
 MCBuild.waitArg('clean') do
 	$com_oreisoft_mylib.clean

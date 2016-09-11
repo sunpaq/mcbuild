@@ -3,6 +3,10 @@ require 'find'
 require 'fileutils'
 
 class MCConfig
+	def self.support_machines
+		['x86_64', 'armv6', 'armv7', 'armv7s', 'arm64']
+	end
+
 	def self.x86_64
 		'x86_64'
 	end
@@ -33,6 +37,17 @@ class MCConfig
 end
 
 class MCBuild
+	def self.detect_machine
+		ret = MCConfig.x86_64
+		mach = %x[uname -m].strip
+		MCConfig.support_machines.each { |supportm|
+			if mach.include? supportm
+				ret = supportm
+			end
+		}
+		ret
+	end
+
 	def self.noArgs(valid_args)
 		ARGV.each { |arg|
 			valid_args.each { |va|
@@ -88,21 +103,23 @@ class MCBuild
 	end
 
 	def initialize(dir)
+		@mach = MCBuild.detect_machine
 		@d = remove_slash(dir)
-		@headers = []
+
 		@name = "mcdefault"
 		@fext = ".c"
 		@oext = ".o"
 		@aext = ".a"
-		@mach = "x86_64"
 		@std  = "c99"
 		@flags = ""
 		@outpath = "_build"
+
+		@headers = []
 		@excludes = []
 		@dependency = []
 
-		@compile_arg = " -I#{@d}/#{@outpath}/archive"
-		@link_arg    = " -L#{@d}/#{@outpath}/archive"
+		@compile_arg = " -I#{self.export_path}"
+		@link_arg    = " -L#{self.export_path}"
 	end
 
 	def export_path

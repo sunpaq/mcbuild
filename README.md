@@ -84,6 +84,11 @@
 	4. set_dependency() need a array
 	   use '[$lib1]' even if only one lib needed
 
+### 8 [build.rb] use require_relative to connect other build blocks
+
+    require_relative 'mylib/settings.rb'
+    require_relative 'myapp/settings.rb'
+
 ### 8.1 [build.rb] compile & clean
 
 	$com_global_name.compile
