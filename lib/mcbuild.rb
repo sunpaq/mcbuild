@@ -2,6 +2,17 @@
 require 'find'
 require 'fileutils'
 
+class MCTarget
+	def self.RaspberryPi2
+		#'armv7l-unknown-linux-gnueabihf'
+		'arm-eabi -marm -mfpu=vfp -mcpu=arm1176jzf-s -mtune=arm1176jzf-s -mfloat-abi=hard'
+	end
+
+	def self.MacOS
+		'x86_64-apple-darwin'
+	end
+end
+
 class MCConfig
 	def self.support_machines
 		['x86_64', 'armv6', 'armv7', 'armv7s', 'arm64']
@@ -46,6 +57,10 @@ class MCBuild
 			end
 		}
 		ret
+	end
+
+	def self.detect_machine_macro
+		"-D__"+MCBuild.detect_machine+"__"
 	end
 
 	def self.noArgs(valid_args)
@@ -103,7 +118,10 @@ class MCBuild
 	end
 
 	def initialize(dir)
-		@mach = MCBuild.detect_machine
+		@target = ''
+		@mach = ''
+		@flags = MCBuild.detect_machine_macro
+
 		@d = remove_slash(dir)
 
 		@name = "mcdefault"
@@ -111,7 +129,6 @@ class MCBuild
 		@oext = ".o"
 		@aext = ".a"
 		@std  = "c99"
-		@flags = ""
 		@outpath = "_build"
 
 		@headers = []
@@ -163,6 +180,11 @@ class MCBuild
 		self
 	end
 
+	def set_target(target)
+		@target = target
+		self
+	end
+
 	def set_arch(arch)
 		@mach = arch
 		self
@@ -191,7 +213,7 @@ class MCBuild
 	def info
 		puts "Monk-C compiler use settings:"
 		puts "--------------------------------"
-		puts "           CPU Arch -> #{@mach}"
+		puts "         CPU target -> #{@target}"
 		puts "         C standard -> #{@std}"
 		puts "               name -> #{@name}"
 		puts " filename extension -> #{@fext}"
@@ -281,9 +303,36 @@ class MCBuild
 		self
 	end
 
+	def compiler_command
+		cmd = "cc"
+		if @target != ''
+			cmd += " -target #{@target}"
+		end
+		if @mach != ''
+			cmd += " -arch #{@mach}"
+		end
+		cmd += " -std=#{@std}"
+		cmd += " #{@flags}"
+		cmd
+	end
+
+	def linker_command
+		cmd = "cc"
+		if @target != ''
+			cmd += " -target #{@target}"
+		end
+		if @mach != ''
+			cmd += " -arch #{@mach}"
+		end
+		#cmd += " -std=#{@std}"
+		#cmd += " #{@flags}"
+		cmd
+	end
+
 	def compile_file(file)
 		base = File.basename(file, ".c")
-		cmd = "cc -arch #{@mach} -std=#{@std} #{@flags} -c -o #{@d}/#{@outpath}/#{base}#{@oext} #{file} #{@compile_arg}"
+		cmd = compiler_command
+		cmd += " -c -o #{@d}/#{@outpath}/#{base}#{@oext} #{file} #{@compile_arg}"
 		puts(cmd)
 		system(cmd)
 		self
@@ -318,7 +367,8 @@ class MCBuild
 	end
 
 	def archive_exe
-		cmd = "cc -o #{@d}/#{@outpath}/archive/#{@name} #{@d}/#{@outpath}/*#{@oext} #{@link_arg}"
+		cmd = linker_command
+		cmd += " -o #{@d}/#{@outpath}/archive/#{@name} #{@d}/#{@outpath}/*#{@oext} #{@link_arg}"
 		puts(cmd)
 		system(cmd)
 		self
