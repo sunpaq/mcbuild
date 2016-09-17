@@ -118,29 +118,42 @@ class MCBuild
 	end
 
 	def initialize(dir)
+		@compiler = "cc"
+		@sysroot = ''
 		@target = ''
 		@mach = ''
+		@position_independent_code = false
 		@flags = MCBuild.detect_machine_macro
+
+		@archiver = "ar"
 
 		@d = remove_slash(dir)
 
 		@name = "mcdefault"
+
 		@fext = ".c"
 		@oext = ".o"
 		@aext = ".a"
 		@std  = "c99"
 		@outpath = "_build"
 
-		@headers = []
-		@excludes = []
+		@headers    = []
+		@excludes   = []
 		@dependency = []
 
-		@compile_arg = " -I#{self.export_path}"
-		@link_arg    = " -L#{self.export_path}"
+		@include_path = "#{@d}/#{@outpath}/archive/include"
+		@lib_path     = "#{@d}/#{@outpath}/archive/lib"
+
+		@compile_arg = " -I#{self.export_include_path}"
+		@link_arg    = " -L#{self.export_lib_path}"
 	end
 
-	def export_path
-		"#{@d}/#{@outpath}/archive"
+	def export_include_path
+		@include_path
+	end
+
+	def export_lib_path
+		@lib_path
 	end
 
 	def name
@@ -155,6 +168,36 @@ class MCBuild
 		@excludes
 	end
 
+	def set_export_include_path(incpath)
+		@include_path = incpath
+		self
+	end
+
+	def set_export_lib_path(libpath)
+		@lib_path = libpath
+		self
+	end
+
+	def set_compiler(compiler)
+		@compiler = compiler
+		self
+	end
+
+	def set_archiver(archiver)
+		@archiver = archiver
+		self
+	end
+
+	def set_sysroot(root)
+		@sysroot = root
+		self
+	end
+
+	def set_position_independent_code(pic)
+		@position_independent_code = pic
+		self
+	end
+
 	def set_headers(headers)
 		@headers = headers
 		self
@@ -163,7 +206,7 @@ class MCBuild
 	def set_name(name)
 		@name = name
 		self
-	end	
+	end
 
 	def set_fext(fext)
 		@fext = fext
@@ -216,17 +259,17 @@ class MCBuild
 		puts "         CPU target -> #{@target}"
 		puts "         C standard -> #{@std}"
 		puts "               name -> #{@name}"
+		puts "           compiler -> #{@compiler}"
 		puts " filename extension -> #{@fext}"
 		puts "   output extension -> #{@oext}"
 		puts "  archive extension -> #{@aext}"
 		puts "      compile flags -> #{@flags}"
 		puts "         source dir -> #{@d}"
-		puts "         export dir -> #{self.export_path}"
 		puts "           excludes -> #{self.excludes}"
 		puts "--------------------------------"
 		puts "C compiler infos:"
 		puts "--------------------------------"
-		system("cc --version")
+		system("#{@compiler} --version")
 		puts "--------------------------------"
 		self
 	end
@@ -238,8 +281,9 @@ class MCBuild
 
 	def prepare
 		begin
-			FileUtils.rm_rf("#{@d}/#{@outpath}")
-			FileUtils.mkdir_p "#{@d}/#{@outpath}/archive"
+			FileUtils.rm_rf   "#{@d}/#{@outpath}"
+			FileUtils.mkdir_p "#{@d}/#{@outpath}/archive/include"
+			FileUtils.mkdir_p "#{@d}/#{@outpath}/archive/lib"
 			if @headers.count != 0
 				self.copy_headers
 			else
@@ -253,14 +297,9 @@ class MCBuild
 
 	def set_dependency(libs=[])
 		libs.each { |lib|
-			path = lib.export_path
-			name = lib.name
-
-			@compile_arg += " -I#{path}"
-			@link_arg    += " -L#{path}"
-			@link_arg    += " -l#{name}"
+			@compile_arg += " -I#{lib.export_include_path} -L#{lib.export_lib_path} -l#{lib.name}"
+			@link_arg    += " -I#{lib.export_include_path} -L#{lib.export_lib_path} -l#{lib.name}"
 		}
-		@link_arg += @compile_arg
 		self
 	end
 
@@ -274,7 +313,7 @@ class MCBuild
 				base = File.basename(header)
 				if @headers.include? base
 					puts "copying-> #{header}"
-					FileUtils.cp("#{header}", "#{@d}/#{@outpath}/archive")
+					FileUtils.cp("#{header}", "#{@d}/#{@outpath}/archive/include")
 				end
 			}
 		rescue Exception => e
@@ -288,12 +327,12 @@ class MCBuild
 			Find.find(@d) { |header|
 				ext = File.extname(header)
 				base = File.basename(header)
-				if (ext == ".h") && (!header.include? self.export_path)
+				if (ext == ".h") && (!header.include? self.export_include_path)
 					if (except != nil) && (except.include? base)
 						puts "except: #{base}"
 					else
 						puts "copying-> #{header}"
-						FileUtils.cp("#{header}", self.export_path)
+						FileUtils.cp("#{header}", self.export_include_path)
 					end
 				end
 			}
@@ -304,36 +343,48 @@ class MCBuild
 	end
 
 	def compiler_command
-		cmd = "cc"
+		cmd = @compiler
+		cmd += " -std=#{@std}"
+		if @sysroot != ''
+			cmd += " --sysroot #{@sysroot}"
+		end
 		if @target != ''
 			cmd += " -target #{@target}"
 		end
 		if @mach != ''
 			cmd += " -arch #{@mach}"
 		end
-		cmd += " -std=#{@std}"
+		if @position_independent_code
+			cmd += " -fPIC"
+		end
 		cmd += " #{@flags}"
 		cmd
 	end
 
 	def linker_command
-		cmd = "cc"
+		cmd = @compiler
+		if @sysroot != ''
+			cmd += " --sysroot #{@sysroot}"
+		end
 		if @target != ''
 			cmd += " -target #{@target}"
 		end
 		if @mach != ''
 			cmd += " -arch #{@mach}"
 		end
-		#cmd += " -std=#{@std}"
-		#cmd += " #{@flags}"
 		cmd
 	end
 
+	def archiver_command
+		cmd = @archiver
+	end
+
 	def compile_file(file)
-		base = File.basename(file, ".c")
+		ext = File.extname(file)
+		base = File.basename(file, ext)
 		cmd = compiler_command
 		cmd += " -c -o #{@d}/#{@outpath}/#{base}#{@oext} #{file} #{@compile_arg}"
-		puts(cmd)
+		#puts(cmd)
 		system(cmd)
 		self
 	end
@@ -344,7 +395,7 @@ class MCBuild
 		begin
 			Find.find(@d) { |file|
 				ext = File.extname(file)
-				base = File.basename(file)
+				base = File.basename(file, ext)
 				if ext == ".c" || ext == ".asm" || ext == ".S"
 					if (@excludes != nil) && (@excludes.include? base)
 						puts "exclude: #{base}"
@@ -360,48 +411,81 @@ class MCBuild
 	end
 
 	def archive_lib
-		cmd = "ar -r #{@d}/#{@outpath}/archive/lib#{@name}#{@aext} #{@d}/#{@outpath}/*#{@oext}"
-		puts(cmd)
+		cmd = "#{self.archiver_command} -r #{self.export_lib_path}/lib#{@name}#{@aext} #{@d}/#{@outpath}/*#{@oext}"
+		#puts(cmd)
 		system(cmd)
 		self
 	end
 
+	def archive_so
+		if @position_independent_code
+			cmd = "#{self.compiler_command} -shared -Wl,-soname,lib#{@name}.so"
+			cmd += " -o #{self.export_lib_path}/lib#{@name}.so #{@d}/#{@outpath}/*#{@oext}"
+			cmd += " -Wl,--whole-archive #{@link_arg} -Wl,--no-whole-archive"
+			#puts(cmd)
+			system(cmd)
+			self
+		else
+			puts "Error[#{@d}]: please use set_shared(true) before archive so"
+			nil
+		end
+	end
+
 	def archive_exe
-		cmd = linker_command
-		cmd += " -o #{@d}/#{@outpath}/archive/#{@name} #{@d}/#{@outpath}/*#{@oext} #{@link_arg}"
-		puts(cmd)
+		cmd = "#{self.linker_command} -o #{self.export_lib_path}/#{@name} #{@d}/#{@outpath}/*#{@oext} #{@link_arg}"
+		#puts(cmd)
 		system(cmd)
+		self
+	end
+
+	def copy_lib_to(path)
+		begin
+			FileUtils.mkdir_p("#{@d}/#{path}")
+			FileUtils.cp("#{self.export_lib_path}/lib#{@name}#{@aext}", "#{@d}/#{path}")
+		rescue Exception => e
+			puts "Error[#{@d}]: " + e.to_s
+		end
+		self
+	end
+
+	def copy_so_to(path)
+		begin
+			FileUtils.mkdir_p("#{@d}/#{path}")
+			FileUtils.cp("#{self.export_lib_path}/lib#{@name}.so", "#{@d}/#{path}")
+		rescue Exception => e
+			puts "Error[#{@d}]: " + e.to_s
+		end
 		self
 	end
 
 	def run
-		system("#{self.export_path}/#{name}")
+		system("#{self.export_lib_path}/#{name}")
 	end
 
 	def done
 		puts "---------- build finished ----------"
-		puts "#{self.export_path}/#{name}"
+		puts "#{self.export_lib_path}/#{name}"
 	end
 end
 
 #test area
 =begin
-runt = MCBuild.new('../../../mcruntime')
+runt = MCBuild.new('../../../monkc1/monkc1/mcruntime')
 	.set_name("monkc")
 	.set_headers(["monkc.h"])
-	.set_excludes(["MCNonLock.S"])
+	.set_excludes(["MCNonLock"])
 	.info
 	.compile
 	.archive_lib
 
-lmt = MCBuild.new('../../../lemontea')
+lmt = MCBuild.new('../../../monkc1/monkc1/lemontea')
 	.set_name("lemontea")
 	.set_dependency([runt])
 	.info
 	.compile
 	.archive_lib
 
-exp = MCBuild.new('../../../example')
+exp = MCBuild.new('../../../monkc1/monkc1/example')
 	.set_name("exp")
 	.set_dependency([runt, lmt])
 	.info
