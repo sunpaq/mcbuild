@@ -66,7 +66,7 @@
 	
 	notice:
 	1. use a global var '$var' with underbar '_' separated reverse domain name
-	2. avoid use related path, use 'File.dirname(__FILE__)' get absolute path
+	2. avoid use related path, use '__dir__' or 'File.dirname(__FILE__)' get absolute path
 	
 ### 7.2 [settings.rb] config build block
 
