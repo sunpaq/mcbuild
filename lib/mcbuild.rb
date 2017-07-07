@@ -63,7 +63,7 @@ class MCBuild
 		"-D__"+MCBuild.detect_machine+"__"
 	end
 
-	def self.noArgs(valid_args)
+	def self.no_command(valid_args)
 		ARGV.each { |arg|
 			valid_args.each { |va|
 				if va == arg
@@ -74,7 +74,7 @@ class MCBuild
 		yield valid_args
 	end
 
-	def self.printArgs(valid_args)
+	def print(valid_args)
 		ARGV.each { |arg|
 			valid_args.each { |va|
 				if va == arg
@@ -86,14 +86,16 @@ class MCBuild
 		valid_args.each { |arg|
 			puts "./build.rb #{arg}"
 		}
+		self
 	end
  
-	def self.waitArg(arg)
+	def command(arg)
 		ARGV.each do |_arg|
 			if _arg==arg
 				yield
 			end
 		end
+		self
 	end
 
 	def self.clean(path)
@@ -102,6 +104,13 @@ class MCBuild
 		rescue Exception => e
 			puts e
 		end
+	end
+
+	def include(folders)
+		folders.each { |f|
+			require_relative @d+'/'+f+'/settings.rb'
+		}
+		self
 	end
 
 	#remove the last slash from path
@@ -123,7 +132,7 @@ class MCBuild
 		@target = ''
 		@mach = ''
 		@position_independent_code = false
-		@flags = MCBuild.detect_machine_macro
+		@flags = MCBuild.detect_machine_macro + " -Wno-unused-command-line-argument"
 
 		@archiver = "ar"
 
@@ -243,6 +252,11 @@ class MCBuild
 		self
 	end
 
+	def add_flag(flag)
+		@flags += ' ' + flag
+		self
+	end
+
 	def set_outpath(outpath)
 		@outpath = outpath
 		self
@@ -250,6 +264,30 @@ class MCBuild
 
 	def set_excludes(excludes)
 		@excludes = Array.new(excludes)
+		self
+	end
+
+	def disable_warning(warning)
+		@flags += ' -Wno-' + warning
+		self
+	end
+
+	def disable_warnings(warnings)
+		warnings.each { |warn|
+			self.disable_warning(warn)
+		}
+		self
+	end
+
+	def enable_warning(warning)
+		@flags += ' -W' + warning
+		self
+	end
+
+	def enable_warnings(warnings)
+		warnings.each { |warn|
+			self.enable_warning(warn)
+		}
 		self
 	end
 
@@ -470,24 +508,16 @@ end
 
 #test area
 =begin
-runt = MCBuild.new('../../../monkc1/monkc1/mcruntime')
-	.set_name("monkc")
-	.set_headers(["monkc.h"])
-	.set_excludes(["MCNonLock"])
+lib = MCBuild.new('../example/mylib')
+	.set_name("lib")
+	.set_headers(["mylib.h"])
 	.info
 	.compile
 	.archive_lib
 
-lmt = MCBuild.new('../../../monkc1/monkc1/lemontea')
-	.set_name("lemontea")
-	.set_dependency([runt])
-	.info
-	.compile
-	.archive_lib
-
-exp = MCBuild.new('../../../monkc1/monkc1/example')
+exp = MCBuild.new('../example/myapp')
 	.set_name("exp")
-	.set_dependency([runt, lmt])
+	.set_dependency([lib])
 	.info
 	.compile
 	.archive_exe

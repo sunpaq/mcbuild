@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
 	s.name      = 'mcbuild'
-	s.version   = '0.0.52'
+	s.version   = '0.0.60'
 	s.date      = '2016-09-17'
 	s.summary   = "A tool help to build C projects"
 	s.authors   = ["Sun Yuli"]

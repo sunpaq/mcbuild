@@ -84,10 +84,9 @@
 	4. set_dependency() need a array
 	   use '[$lib1]' even if only one lib needed
 
-### 8 [build.rb] use require_relative to connect other build blocks
+### 8 [build.rb] connect other build blocks
 
-    require_relative 'mylib/settings.rb'
-    require_relative 'myapp/settings.rb'
+    build = MCBuild.new(__dir__).include ['mylib', 'myapp']
 
 ### 8.1 [build.rb] compile & clean
 
@@ -101,14 +100,14 @@
     
 ### 8.3 [build.rb] user input
 
-    MCBuild.waitArg('clean') do
+    build.command 'clean' do
     	$com_global_lib1.clean
     	$com_global_app.clean
     end
     
 ### 8.4 [build.rb] print script usage info
 
-	MCBuild.printArgs(['clean', 'build', 'run'])
+	build.print ['clean', 'build', 'run']
 
 ### 9 [Android JNI] example
 
@@ -121,7 +120,7 @@
 	$AR = $NDKHOME + $TOOLCHAIN + "/arm-linux-androideabi-ar"
 	$SYSROOT = $NDKHOME + "/platforms/android-21/arch-arm"
 
-	$LOCAL = File.dirname(__FILE__)
+	$LOCAL = __dir__
 
 	$monkc = MCBuild.new($LOCAL + "/MCLib").set_name('monkc')
 		.set_excludes(['MCNonLock'])
@@ -161,13 +160,15 @@
 		$app
 	]
 
-	MCBuild.waitArg('clean') do
+	build = MCBuild.new($LOCAL)
+
+	build.command 'clean' do
 		blocks.each { |b|
 			b.clean
 		}
 	end
 
-	MCBuild.waitArg('build') do
+	build.command 'build' do
 		blocks.each { |b|
 			b
 			.set_compiler($CC)
@@ -184,7 +185,7 @@
 		$app.compile.archive_so.copy_so_to("../../libs/armeabi-v7a")
 	end
 
-	MCBuild.printArgs(['clean', 'build'])
+	build.print ['clean', 'build']
 	
 
 		
