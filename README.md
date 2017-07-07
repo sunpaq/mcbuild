@@ -55,10 +55,8 @@
 		build.rb
 		- lib
 			settings.rb
-			build.rb (optional)
 		- app
 			settings.rb
-			build.rb (optional)
 			
 ### 7.1 [settings.rb] create build block
 
@@ -87,6 +85,10 @@
 ### 8 [build.rb] connect other build blocks
 
     build = MCBuild.new(__dir__).include ['mylib', 'myapp']
+    
+    notice:
+    the 'mylib' and 'myapp' are folder names (not block name you setted)
+    script will find the __dir__/mylib/settings.rb file and require it.
 
 ### 8.1 [build.rb] compile & clean
 
