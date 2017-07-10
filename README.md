@@ -92,8 +92,8 @@
 
 ### 8.1 [build.rb] compile & clean
 
-	$com_global_name.compile
-	$com_global_name.clean
+    $com_global_name.compile
+    $com_global_name.clean
 
 ### 8.2 [build.rb] archive
 
@@ -109,7 +109,13 @@
     
 ### 8.4 [build.rb] print script usage info
 
-	build.print ['clean', 'build', 'run']
+    build.print ['clean', 'all', 'run']
+
+### 8.5 run the build script
+
+    ruby build.rb all
+    or
+    ./build.rb all
 
 ### 9 [Android JNI] example
 
