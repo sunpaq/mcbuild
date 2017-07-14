@@ -8,12 +8,12 @@
 
 	the C programming language and make/gmake tool is great
 	but many C newbie find Makefile hard to wirte. 
-	
+
 	many of them stop learning C programming just because 
 	they can't organize their code and build a executable easily.
 	the syntax of Makefile looks strange for new programmers these days.
 	and these syntax is only used in Makefiles.
-	
+
 	ruby is easy to learn. and also can be used on many other tasks.
 	mcbuild is quite simple. you don't need to know ruby before. 
 	
@@ -21,6 +21,9 @@
 ### 2. install from official rubygem
 
     gem install mcbuild
+
+    mcbuild depends on the gem https://rubygems.org/gems/colored
+    it will also be installed automatically when you install mcbuild gem
 
 ### 3. install from this git repo
 
